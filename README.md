@@ -22,7 +22,7 @@ A cinematic digital museum where legendary objects meet interactive 3D, thoughtf
 
 Exhibitora reimagines a museum as a space for discovery. A floating Mjolnir and Stormbreaker anchor the Asgard collection, alongside cosmic relics and royal regalia. Every artifact has an interactive display, provenance, materials, an era, and a story.
 
-- **Original 3D displays:** six procedural Three.js models, pointer rotation, metallic surfaces, orbital details, and animated lightning on featured weapons.
+- **Original 3D displays:** six procedural Three.js models, pointer rotation, metallic surfaces, orbital details, and continuous branching lightning rooted to Mjolnir and Stormbreaker, blue-white metal illumination, and synchronized full-interface storm clouds. Motion controls disable both the 3D discharges and the surrounding storm.
 - **A considered interface:** sculpted metallic controls, Manrope typography, editorial serif accents, atmospheric lighting, and light/dark themes saved on your device.
 - **Discover your way:** category filters, text search, alphabetical sorting, artifact details, and a personal collection of saved discoveries.
 - **Real publishing:** curators draft and refine exhibits; editors request changes or publish them; administrators govern roles and archive exhibits.

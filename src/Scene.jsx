@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import * as T from 'three';
+import {boltPath,stormEnvelope} from './lightning.js';
 const metal=(color='#b3bdca',roughness=.3,metalness=.85)=>new T.MeshStandardMaterial({color,roughness,metalness});
 export function makeArtifact(type){
  const g=new T.Group(),steel=metal(),dark=metal('#242e3c',.65),gold=metal('#bd9860'),wood=metal('#5d4433',.95,.05),glow=new T.MeshStandardMaterial({color:'#b7e4ff',emissive:'#53adff',emissiveIntensity:2});
@@ -27,11 +28,25 @@ export default function Scene({type='hammer',hero=false,motion=true,theme='dark'
  const scene=new T.Scene(),cam=new T.PerspectiveCamera(34,1,.1,100);cam.position.set(0,.25,hero?9.5:8);cam.lookAt(0,-.1,0);scene.add(new T.AmbientLight('#b9d2ff',theme==='light'?2.6:1.3));const key=new T.DirectionalLight('#e9f1ff',5);key.position.set(3,4,5);scene.add(key);const rim=new T.PointLight('#5c9dff',70,20);rim.position.set(-3,1,-2);scene.add(rim);const warm=new T.PointLight('#c7a06b',30,20);warm.position.set(3,-1,2);scene.add(warm);
  const pivot=new T.Group();scene.add(pivot);const artifact=makeArtifact(type);pivot.add(artifact);if(type==='hammer')artifact.position.y=.4;
  const ringMat=new T.MeshBasicMaterial({color:theme==='dark'?'#577596':'#a6b6cd',transparent:true,opacity:.23});for(let i=0;i<2;i++){const ring=new T.Mesh(new T.TorusGeometry(2.65+i*.18,.006,4,120),ringMat);ring.rotation.x=Math.PI/2-.15;ring.position.y=-2;scene.add(ring);}
- let lightning; if(hero&&['hammer','axe'].includes(type)){const pts=[];for(let i=0;i<30;i++)pts.push(new T.Vector3(-3.5+i*.24,.5+Math.sin(i*1.8)*.5,(Math.random()-.5)*.35));lightning=new T.Line(new T.BufferGeometry().setFromPoints(pts),new T.LineBasicMaterial({color:'#b4dcff',transparent:true,opacity:.8}));scene.add(lightning);}
+ const electric=['hammer','axe'].includes(type), discharge=new T.Group();artifact.add(discharge);
+ const head=new T.Vector3(type==='hammer'?.35:.7,.8,.35), projected=new T.Vector3();
+ const arcMaterials=[new T.MeshBasicMaterial({color:'#2b77ff',transparent:true,opacity:.18,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}),new T.MeshBasicMaterial({color:'#80c9ff',transparent:true,opacity:.7,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}),new T.MeshBasicMaterial({color:'#effaff',transparent:true,opacity:.95,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false})];
+ const charge=new T.PointLight('#72b7ff',0,8,2);charge.position.copy(head);artifact.add(charge);let generation=-1;
+ function rebuildArcs(seed){
+ for(const child of [...discharge.children]){child.geometry.dispose();discharge.remove(child);}
+ const count=hero?5:3;
+ function tube(points,radius,mat){const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p)),false,'centripetal');discharge.add(new T.Mesh(new T.TubeGeometry(curve,points.length*2,radius,4,false),mat));}
+ for(let i=0;i<count;i++){const angle=i/count*Math.PI*2+seed*.37;const target=[head.x+Math.cos(angle)*(hero?2.4:1.5),head.y+Math.sin(angle)*(hero?1.7:1.2),head.z+Math.sin(i*2)*.55];const pts=boltPath(head.toArray(),target,seed*97+i*73,20,.5);
+ tube(pts,.038,arcMaterials[0]);tube(pts,.014,arcMaterials[1]);tube(pts,.0045,arcMaterials[2]);
+ const branch=boltPath(pts[11],[target[0]+Math.sin(i)*.6,target[1]+.5,target[2]+.15],seed+i*29,10,.3);tube(branch,.008,arcMaterials[1]);tube(branch,.0025,arcMaterials[2]);}
+ }
  let raf=0,start=performance.now(),pointer={x:0,y:0},drag=false,last=0,manual=0;const move=e=>{const r=host.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width-.5);pointer.y=((e.clientY-r.top)/r.height-.5);if(drag){manual+=(e.clientX-last)*.01;last=e.clientX;}};const down=e=>{drag=true;last=e.clientX;host.setPointerCapture?.(e.pointerId);};const up=()=>drag=false;host.addEventListener('pointermove',move);host.addEventListener('pointerdown',down);host.addEventListener('pointerup',up);host.addEventListener('pointercancel',up);
  const resize=()=>{const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix();};const obs=new ResizeObserver(resize);obs.observe(host);resize();
- const animate=()=>{if(!visible)return;const t=(performance.now()-start)*.001;const active=motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches;pivot.rotation.y=manual+(active?Math.sin(t*.3)*.7:0)+pointer.x*.3;pivot.rotation.x=pointer.y*.15;pivot.position.y=active?Math.sin(t*.9)*.09:0;if(lightning)lightning.visible=active&&Math.sin(t*2.4)>.93;renderer.render(scene,cam);if(active)raf=requestAnimationFrame(animate);};animate();const refresh=()=>{if(!motion)animate();};host.addEventListener('pointermove',refresh);
- return()=>{cancelAnimationFrame(raf);obs.disconnect();host.removeEventListener('pointermove',move);host.removeEventListener('pointermove',refresh);host.removeEventListener('pointerdown',down);host.removeEventListener('pointerup',up);host.removeEventListener('pointercancel',up);scene.traverse(o=>{o.geometry?.dispose();if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});renderer.dispose();renderer.domElement.remove();};
+ const animate=()=>{if(!visible)return;const t=(performance.now()-start)*.001;const active=motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches;pivot.rotation.y=manual+(active?Math.sin(t*.3)*.7:0)+pointer.x*.3;pivot.rotation.x=pointer.y*.15;pivot.position.y=active?Math.sin(t*.9)*.09:0;discharge.visible=electric&&active;
+ if(electric&&active){const step=Math.floor(t/1.1);if(step!==generation){generation=step;rebuildArcs(step+3);}const power=stormEnvelope(performance.now()/1000);charge.intensity=18+power*32;arcMaterials[0].opacity=.14+power*.1;arcMaterials[1].opacity=.5+power*.3;
+ artifact.updateWorldMatrix(true,false);projected.copy(head);artifact.localToWorld(projected);projected.project(cam);host.dataset.lightningX=String((projected.x+1)/2);host.dataset.lightningY=String((1-projected.y)/2);
+ }else{charge.intensity=0;delete host.dataset.lightningX;delete host.dataset.lightningY;}renderer.render(scene,cam);if(active)raf=requestAnimationFrame(animate);};animate();const refresh=()=>{if(!motion)animate();};host.addEventListener('pointermove',refresh);
+ return()=>{cancelAnimationFrame(raf);obs.disconnect();host.removeEventListener('pointermove',move);host.removeEventListener('pointermove',refresh);host.removeEventListener('pointerdown',down);host.removeEventListener('pointerup',up);host.removeEventListener('pointercancel',up);scene.traverse(o=>{o.geometry?.dispose();if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});arcMaterials.forEach(m=>m.dispose());delete host.dataset.lightningX;delete host.dataset.lightningY;renderer.dispose();renderer.domElement.remove();};
  },[type,hero,motion,theme,visible]);
  return <div ref={el} className={'artifact-scene '+(hero?'hero-scene':'')} role="img" aria-label={`Interactive 3D ${type}. Drag to rotate.`}>{failed&&<div className="model-fallback">{type==='hammer'?'⚒':type==='axe'?'⚔':'◇'}<small>3D preview unavailable on this device</small></div>}</div>;
 }
