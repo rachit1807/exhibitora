@@ -8,7 +8,7 @@
 
 A cinematic digital museum where legendary objects meet interactive 3D, thoughtful curation, and secure role-based publishing.
 
-[Explore the architecture](#architecture) · [Run locally](#run-locally) · [Permissions](#roles--permissions) · [API reference](docs/API.md)
+[Visit the live museum](https://exhibitora-rachit.onrender.com) · [Explore the architecture](#architecture) · [Run locally](#run-locally) · [Permissions](#roles--permissions) · [API reference](docs/API.md)
 
 <br />
 
